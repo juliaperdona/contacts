@@ -1,11 +1,496 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda de Contatos</title>
+  
+  <!-- CSS: Vuetify e Material Design Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@3.5.0/dist/vuetify.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  
+  <!-- Vue 3 e Vuetify 3 -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.3.13/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@3.5.0/dist/vuetify.min.js"></script>
+  
+  <!-- Vue IMask para mascarar o telefone -->
+  <script src="https://cdn.jsdelivr.net/npm/imask@7.2.1/dist/imask.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-imask@7.2.1/dist/vue-imask.min.js"></script>
+  
+  <style>
+    .ddd-11 {
+      background-color: #e3f2fd !important;
+    }
+    .v-data-table-header {
+      background-color: #f5f5f5;
+    }
+    [v-cloak] {
+      display: none;
+    }
+  </style>
 </head>
 <body>
+  <div id="app" v-cloak>
+    <v-app>
+      <!-- Barra superior -->
+      <v-app-bar color="primary" density="compact">
+        <v-app-bar-title>Agenda de Contatos</v-app-bar-title>
+        <v-spacer></v-spacer>
+        <v-btn
+          color="white"
+          prepend-icon="mdi-plus"
+          @click="openAddModal"
+        >
+          Adicionar
+        </v-btn>
+      </v-app-bar>
+
+      <!-- Conteúdo principal -->
+      <v-main>
+        <v-container>
+          <v-card class="mx-auto mt-4">
+            <v-card-title class="text-h5">
+              Lista de Contatos
+            </v-card-title>
+            
+            <!-- Tabela de contatos -->
+            <v-data-table
+              :headers="headers"
+              :items="contatos"
+              :items-per-page="10"
+              class="elevation-1"
+              item-value="id"
+              density="comfortable"
+            >
+              <template v-slot:item="{ item, index }">
+                <tr :class="{ 'ddd-11': isDDD11(item.telefone) }">
+                  <td>{{ item.nome }}</td>
+                  <td>{{ item.telefone }}</td>
+                  <td>
+                    <v-btn
+                      icon="mdi-pencil"
+                      size="small"
+                      color="primary"
+                      class="mr-2"
+                      @click="openEditModal(item)"
+                    ></v-btn>
+                    <v-btn
+                      icon="mdi-delete"
+                      size="small"
+                      color="error"
+                      @click="confirmDelete(item)"
+                    ></v-btn>
+                  </td>
+                </tr>
+              </template>
+            </v-data-table>
+          </v-card>
+        </v-container>
+      </v-main>
+
+      <!-- Modal de criação/edição de contatos -->
+      <v-dialog
+        v-model="modal.show"
+        max-width="500px"
+        persistent
+      >
+        <v-card>
+          <v-card-title>
+            <span class="text-h5">{{ modal.isEdit ? 'Editar Contato' : 'Novo Contato' }}</span>
+          </v-card-title>
+
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="formData.nome"
+                    label="Nome completo*"
+                    required
+                    :error-messages="formErrors.nome"
+                    @input="validateNome"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="formData.telefone"
+                    v-imask="telefoneMask"
+                    label="Telefone*"
+                    required
+                    :error-messages="formErrors.telefone"
+                    @input="validateTelefone"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+            </v-container>
+            <small>*Campos obrigatórios</small>
+          </v-card-text>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue-darken-1"
+              variant="text"
+              @click="closeModal"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="blue-darken-1"
+              variant="text"
+              @click="saveContato"
+              :disabled="!isFormValid"
+            >
+              Salvar
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Dialog de confirmação de exclusão -->
+      <v-dialog
+        v-model="deleteDialog.show"
+        max-width="400"
+      >
+        <v-card>
+          <v-card-title class="text-h5">
+            Confirmar exclusão
+          </v-card-title>
+          <v-card-text>
+            Deseja realmente excluir o contato <strong>{{ deleteDialog.contato?.nome }}</strong>?
+            Esta ação não pode ser desfeita.
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue-darken-1"
+              variant="text"
+              @click="deleteDialog.show = false"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="red-darken-1"
+              variant="text"
+              @click="deleteContato"
+            >
+              Excluir
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Snackbar para mensagens -->
+      <v-snackbar
+        v-model="snackbar.show"
+        :color="snackbar.color"
+        :timeout="3000"
+      >
+        {{ snackbar.text }}
+        <template v-slot:actions>
+          <v-btn
+            variant="text"
+            @click="snackbar.show = false"
+          >
+            Fechar
+          </v-btn>
+        </template>
+      </v-snackbar>
+    </v-app>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
     
+    const API_URL = 'http://localhost:3000';
+
+    const app = createApp({
+      setup() {
+        // Dados dos contatos
+        const contatos = ref([]);
+        
+        // Headers da tabela
+        const headers = [
+          { title: 'Nome', key: 'nome' },
+          { title: 'Telefone', key: 'telefone' },
+          { title: 'Ações', key: 'actions', sortable: false, align: 'end' }
+        ];
+        
+        // Estado do modal
+        const modal = reactive({
+          show: false,
+          isEdit: false
+        });
+        
+        // Dados do formulário
+        const formData = reactive({
+          id: null,
+          nome: '',
+          telefone: ''
+        });
+        
+        // Erros do formulário
+        const formErrors = reactive({
+          nome: '',
+          telefone: ''
+        });
+        
+        // Dialog de confirmação de exclusão
+        const deleteDialog = reactive({
+          show: false,
+          contato: null
+        });
+        
+        // Snackbar para mensagens
+        const snackbar = reactive({
+          show: false,
+          text: '',
+          color: 'success'
+        });
+        
+        // Máscara para o telefone
+        const telefoneMask = {
+          mask: '(00) 0000-0000',
+          lazy: false
+        };
+        
+        // Verificar se o formulário é válido
+        const isFormValid = computed(() => {
+          return formData.nome.trim() !== '' && 
+                 formData.telefone.trim() !== '' && 
+                 formErrors.nome === '' && 
+                 formErrors.telefone === '';
+        });
+        
+        // Funções
+        function isDDD11(telefone) {
+          return telefone && telefone.startsWith('(11)');
+        }
+        
+        // Validar nome (mínimo de duas palavras com pelo menos 3 letras cada)
+        function validateNome() {
+          formErrors.nome = '';
+          
+          if (!formData.nome.trim()) {
+            formErrors.nome = 'O nome é obrigatório';
+            return;
+          }
+          
+          const palavras = formData.nome.trim().split(/\s+/);
+          if (palavras.length < 2) {
+            formErrors.nome = 'O nome deve conter pelo menos duas palavras';
+            return;
+          }
+          
+          if (!palavras.every(palavra => palavra.length >= 3)) {
+            formErrors.nome = 'Cada palavra do nome deve ter pelo menos 3 letras';
+            return;
+          }
+        }
+        
+        // Validar telefone (formato (xx) xxxx-xxxx)
+        function validateTelefone() {
+          formErrors.telefone = '';
+          
+          if (!formData.telefone.trim()) {
+            formErrors.telefone = 'O telefone é obrigatório';
+            return;
+          }
+          
+          const telefoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
+          if (!telefoneRegex.test(formData.telefone)) {
+            formErrors.telefone = 'O telefone deve estar no formato (xx) xxxx-xxxx ou (xx) xxxxx-xxxx';
+          }
+        }
+        
+        // Abrir modal para adicionar contato
+        function openAddModal() {
+          modal.isEdit = false;
+          formData.id = null;
+          formData.nome = '';
+          formData.telefone = '';
+          formErrors.nome = '';
+          formErrors.telefone = '';
+          modal.show = true;
+        }
+        
+        // Abrir modal para editar contato
+        function openEditModal(item) {
+          modal.isEdit = true;
+          formData.id = item.id;
+          formData.nome = item.nome;
+          formData.telefone = item.telefone;
+          formErrors.nome = '';
+          formErrors.telefone = '';
+          modal.show = true;
+        }
+        
+        // Fechar modal
+        function closeModal() {
+          modal.show = false;
+        }
+        
+        // Salvar contato (criar ou atualizar)
+        async function saveContato() {
+          try {
+            // Validar campos
+            validateNome();
+            validateTelefone();
+            
+            if (!isFormValid.value) {
+              return;
+            }
+            
+            const data = {
+              nome: formData.nome.trim(),
+              telefone: formData.telefone.trim()
+            };
+            
+            let response;
+            
+            if (modal.isEdit) {
+              // Atualizar contato existente
+              response = await fetch(`${API_URL}/contatos/${formData.id}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+              });
+            } else {
+              // Criar novo contato
+              response = await fetch(`${API_URL}/contatos`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+              });
+            }
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Ocorreu um erro ao salvar o contato');
+            }
+            
+            // Recarregar lista de contatos
+            fetchContatos();
+            
+            // Exibir mensagem de sucesso
+            snackbar.color = 'success';
+            snackbar.text = modal.isEdit ? 'Contato atualizado com sucesso!' : 'Contato adicionado com sucesso!';
+            snackbar.show = true;
+            
+            // Fechar modal
+            closeModal();
+          } catch (error) {
+            snackbar.color = 'error';
+            snackbar.text = error.message;
+            snackbar.show = true;
+          }
+        }
+        
+        // Confirmar exclusão de contato
+        function confirmDelete(item) {
+          deleteDialog.contato = item;
+          deleteDialog.show = true;
+        }
+        
+        // Excluir contato
+        async function deleteContato() {
+          try {
+            const response = await fetch(`${API_URL}/contatos/${deleteDialog.contato.id}`, {
+              method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+              throw new Error('Ocorreu um erro ao excluir o contato');
+            }
+            
+            // Recarregar lista de contatos
+            fetchContatos();
+            
+            // Exibir mensagem de sucesso
+            snackbar.color = 'success';
+            snackbar.text = 'Contato excluído com sucesso!';
+            snackbar.show = true;
+            
+            // Fechar dialog de confirmação
+            deleteDialog.show = false;
+            deleteDialog.contato = null;
+          } catch (error) {
+            snackbar.color = 'error';
+            snackbar.text = error.message;
+            snackbar.show = true;
+          }
+        }
+        
+        // Buscar contatos da API
+        async function fetchContatos() {
+          try {
+            const response = await fetch(`${API_URL}/contatos`);
+            
+            if (!response.ok) {
+              throw new Error('Erro ao carregar contatos');
+            }
+            
+            contatos.value = await response.json();
+          } catch (error) {
+            snackbar.color = 'error';
+            snackbar.text = 'Erro ao carregar contatos: ' + error.message;
+            snackbar.show = true;
+          }
+        }
+        
+        // Carregar contatos ao iniciar
+        onMounted(() => {
+          fetchContatos();
+        });
+        
+        return {
+          contatos,
+          headers,
+          modal,
+          formData,
+          formErrors,
+          deleteDialog,
+          snackbar,
+          isFormValid,
+          telefoneMask,
+          isDDD11,
+          validateNome,
+          validateTelefone,
+          openAddModal,
+          openEditModal,
+          closeModal,
+          saveContato,
+          confirmDelete,
+          deleteContato
+        };
+      }
+    });
+    
+    app.use(Vuetify.createVuetify({
+      theme: {
+        defaultTheme: 'light',
+        themes: {
+          light: {
+            dark: false,
+            colors: {
+              primary: '#1976D2',
+              secondary: '#424242',
+              accent: '#82B1FF',
+              error: '#FF5252',
+              info: '#2196F3',
+              success: '#4CAF50',
+              warning: '#FFC107'
+            }
+          }
+        }
+      }
+    }));
+    
+    app.mount('#app');
+  </script>
 </body>
 </html>

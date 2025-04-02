@@ -1,0 +1,36 @@
+{
+  "name": "contacts",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juliaperdona/contacts.git"
+  },
+  "keywords": [
+    "api",
+    "node",
+    "express",
+    "mysql"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/juliaperdona/contacts/issues"
+  },
+  "homepage": "https://github.com/juliaperdona/contacts#readme",
+  "description": "API para agenda de contatos",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
