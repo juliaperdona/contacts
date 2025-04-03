@@ -1,12 +1,12 @@
-const express = require('express');
-const ContatoController = require('../controllers/contatoController');
-const { validateContato } = require('../middlewares/validationMiddleware');
+import { Router } from 'express';
+import ContatoController from '../controllers/contatoController.js';
+import { validateContato } from '../middlewares/validationMiddleware.js';
 
-const router = express.Router();
+const router = Router();
 
-router.post('/contatos', validateContato, ContatoController.create);
-router.get('/contatos', ContatoController.findAll);
-router.patch('/contatos/:id', validateContato, ContatoController.update);
-router.delete('/contatos/:id', ContatoController.delete);
+router.post('/', validateContato, ContatoController.create);
+router.get('/', ContatoController.findAll);
+router.patch('/:id', validateContato, ContatoController.update);
+router.delete('/:id', ContatoController.delete);
 
-module.exports = router;
+export default router;

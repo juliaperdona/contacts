@@ -1,4 +1,4 @@
-const db = require('../config/database');
+import db from '../config/database.js'
 
 class ContatoModel {
   async create(contato) {
@@ -6,9 +6,10 @@ class ContatoModel {
       'INSERT INTO contatos (nome, telefone) VALUES (?, ?)',
       [contato.nome, contato.telefone]
     );
-    
+
     const id = result.insertId;
-    return { id, ...contato };
+    const { nome, telefone } = contato;
+    return { id, nome, telefone };
   }
 
   async findAll() {
@@ -16,24 +17,29 @@ class ContatoModel {
     return rows;
   }
 
-  async findById(id) {
+   async findById(id) {
     const [rows] = await db.query('SELECT * FROM contatos WHERE id = ?', [id]);
     return rows[0];
   }
 
   async update(id, contato) {
-    await db.query(
+    const { nome, telefone } = contato; 
+    const [result] = await db.query( 
       'UPDATE contatos SET nome = ?, telefone = ? WHERE id = ?',
-      [contato.nome, contato.telefone, id]
+      [nome, telefone, id]
     );
-    
-    return { id, ...contato };
+
+    if (result.affectedRows === 0) {
+        return null;
+    }
+
+    return { id, nome, telefone };
   }
 
   async delete(id) {
-    await db.query('DELETE FROM contatos WHERE id = ?', [id]);
-    return true;
+    const [result] = await db.query('DELETE FROM contatos WHERE id = ?', [id]);
+    return result.affectedRows > 0;
   }
 }
 
-module.exports = new ContatoModel();
+export default new ContatoModel();
