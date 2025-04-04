@@ -160,7 +160,6 @@
         </v-card>
       </v-dialog>
 
-      <!-- Dialog de confirmação de exclusão -->
       <v-dialog
         v-model="deleteDialog.show"
         max-width="400"
@@ -193,7 +192,6 @@
         </v-card>
       </v-dialog>
 
-      <!-- Snackbar para mensagens -->
       <v-snackbar
         v-model="snackbar.show"
         :color="snackbar.color"
@@ -219,55 +217,46 @@
 
     const app = createApp({
       setup() {
-        // Dados dos contatos
         const contatos = ref([]);
         
-        // Headers da tabela
         const headers = [
           { title: 'Nome', key: 'nome' },
           { title: 'Telefone', key: 'telefone' },
           { title: 'Ações', key: 'actions', sortable: false, align: 'end' }
         ];
         
-        // Estado do modal
         const modal = reactive({
           show: false,
           isEdit: false
         });
         
-        // Dados do formulário
         const formData = reactive({
           id: null,
           nome: '',
           telefone: ''
         });
         
-        // Erros do formulário
         const formErrors = reactive({
           nome: '',
           telefone: ''
         });
         
-        // Dialog de confirmação de exclusão
         const deleteDialog = reactive({
           show: false,
           contato: null
         });
         
-        // Snackbar para mensagens
         const snackbar = reactive({
           show: false,
           text: '',
           color: 'success'
         });
         
-        // Máscara para o telefone
-        const telefoneMask = {
-          mask: '(00) 0000-0000',
-          lazy: false
-        };
+        const telefoneMask = reactive({
+      mask: '(00) 00000-0000',
+      lazy: false             
+    });
         
-        // Verificar se o formulário é válido
         const isFormValid = computed(() => {
           return formData.nome.trim() !== '' && 
                  formData.telefone.trim() !== '' && 
@@ -275,12 +264,10 @@
                  formErrors.telefone === '';
         });
         
-        // Funções
         function isDDD11(telefone) {
           return telefone && telefone.startsWith('(11)');
         }
         
-        // Validar nome (mínimo de duas palavras com pelo menos 3 letras cada)
         function validateNome() {
           formErrors.nome = '';
           
@@ -301,7 +288,6 @@
           }
         }
         
-        // Validar telefone (formato (xx) xxxx-xxxx)
         function validateTelefone() {
           formErrors.telefone = '';
           
@@ -316,7 +302,6 @@
           }
         }
         
-        // Abrir modal para adicionar contato
         function openAddModal() {
           modal.isEdit = false;
           formData.id = null;
@@ -327,7 +312,6 @@
           modal.show = true;
         }
         
-        // Abrir modal para editar contato
         function openEditModal(item) {
           modal.isEdit = true;
           formData.id = item.id;
@@ -338,15 +322,12 @@
           modal.show = true;
         }
         
-        // Fechar modal
         function closeModal() {
           modal.show = false;
         }
         
-        // Salvar contato (criar ou atualizar)
         async function saveContato() {
           try {
-            // Validar campos
             validateNome();
             validateTelefone();
             
@@ -362,7 +343,6 @@
             let response;
             
             if (modal.isEdit) {
-              // Atualizar contato existente
               response = await fetch(`${API_URL}/contatos/${formData.id}`, {
                 method: 'PATCH',
                 headers: {
@@ -371,7 +351,6 @@
                 body: JSON.stringify(data)
               });
             } else {
-              // Criar novo contato
               response = await fetch(`${API_URL}/contatos`, {
                 method: 'POST',
                 headers: {
@@ -446,7 +425,6 @@
           }
         }
         
-        // Carregar contatos ao iniciar
         onMounted(() => {
           fetchContatos();
         });
@@ -493,7 +471,7 @@
         }
       }
     }));
-    
+    app.use(VueIMask.IMaskDirective);
     app.mount('#app');
   </script>
 </body>
