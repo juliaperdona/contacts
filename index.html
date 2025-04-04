@@ -5,24 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agenda de Contatos</title>
   
-  <!-- CSS: Vuetify e Material Design Icons -->
   <link href="https://cdn.jsdelivr.net/npm/vuetify@3.5.0/dist/vuetify.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
   
-  <!-- Vue 3 e Vuetify 3 -->
   <script src="https://cdn.jsdelivr.net/npm/vue@3.3.13/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vuetify@3.5.0/dist/vuetify.min.js"></script>
   
-  <!-- Vue IMask para mascarar o telefone -->
   <script src="https://cdn.jsdelivr.net/npm/imask@7.2.1/dist/imask.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue-imask@7.2.1/dist/vue-imask.min.js"></script>
   
   <style>
-    .ddd-11 {
-      background-color: #ffffff !important;
+    
+    .v-data-table tbody tr.ddd-11 {
+      background-color: #E3F2FD !important; 
     }
     .v-data-table-header {
-      background-color: #f5f5f5;
+      background-color: #f5f5f5; 
     }
     [v-cloak] {
       display: none;
@@ -32,7 +30,6 @@
 <body>
   <div id="app" v-cloak>
     <v-app>
-      <!-- Barra superior -->
       <v-app-bar color="primary" density="compact">
         <v-app-bar-title>Agenda de Contatos</v-app-bar-title>
         <v-spacer></v-spacer>
@@ -45,7 +42,6 @@
         </v-btn>
       </v-app-bar>
 
-      <!-- Conteúdo principal -->
       <v-main>
         <v-container>
           <v-card class="mx-auto mt-4">
@@ -53,7 +49,6 @@
               Lista de Contatos
             </v-card-title>
             
-            <!-- Tabela de contatos -->
             <v-data-table
               :headers="headers"
               :items="contatos"
@@ -61,34 +56,52 @@
               class="elevation-1"
               item-value="id"
               density="comfortable"
+              :items-per-page-text="'Itens por página:'"
             >
-              <template v-slot:item="{ item, index }">
-                <tr :class="{ 'ddd-11': isDDD11(item.telefone) }">
-                  <td>{{ item.nome }}</td>
-                  <td>{{ item.telefone }}</td>
-                  <td>
-                    <v-btn
-                      icon="mdi-pencil"
+            <template v-slot:item="{ item }">
+              <tr :class="{ 'ddd-11': isDDD11(item.telefone) }">
+                <td>{{ item.nome }}</td>
+                <td>{{ item.telefone }}</td>
+                <td class="text-end">
+                  <v-menu location="start">
+                    <template v-slot:activator="{ props }">
+                      <v-btn
+                      icon="mdi-dots-vertical"
+                      variant="text"
                       size="small"
-                      color="primary"
-                      class="mr-2"
-                      @click="openEditModal(item)"
-                    ></v-btn>
-                    <v-btn
-                      icon="mdi-delete"
-                      size="small"
-                      color="error"
-                      @click="confirmDelete(item)"
-                    ></v-btn>
-                  </td>
-                </tr>
-              </template>
+                      v-bind="props"
+                      title="Ações do contato"
+                      aria-label="Ações do contato"
+                      ></v-btn>
+                    </template>
+
+                    <v-list density="compact" width="">
+                      <v-list-item
+                        @click="openEditModal(item)"
+                        prepend-icon="mdi-pencil"
+                        value="edit"
+                      >
+                      </v-list-item>
+
+                     
+                      <v-list-item
+                        @click="confirmDelete(item)"
+                        prepend-icon="mdi-delete"
+                        value="delete"
+                        base-color="error"
+                      >
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
+                </td>
+              
+              </tr>
+            </template>
             </v-data-table>
           </v-card>
         </v-container>
       </v-main>
 
-      <!-- Modal de criação/edição de contatos -->
       <v-dialog
         v-model="modal.show"
         max-width="500px"
@@ -373,15 +386,12 @@
               throw new Error(errorData.error || 'Ocorreu um erro ao salvar o contato');
             }
             
-            // Recarregar lista de contatos
             fetchContatos();
             
-            // Exibir mensagem de sucesso
             snackbar.color = 'success';
             snackbar.text = modal.isEdit ? 'Contato atualizado com sucesso!' : 'Contato adicionado com sucesso!';
             snackbar.show = true;
             
-            // Fechar modal
             closeModal();
           } catch (error) {
             snackbar.color = 'error';
@@ -390,13 +400,11 @@
           }
         }
         
-        // Confirmar exclusão de contato
         function confirmDelete(item) {
           deleteDialog.contato = item;
           deleteDialog.show = true;
         }
         
-        // Excluir contato
         async function deleteContato() {
           try {
             const response = await fetch(`${API_URL}/contatos/${deleteDialog.contato.id}`, {
@@ -407,15 +415,12 @@
               throw new Error('Ocorreu um erro ao excluir o contato');
             }
             
-            // Recarregar lista de contatos
             fetchContatos();
             
-            // Exibir mensagem de sucesso
             snackbar.color = 'success';
             snackbar.text = 'Contato excluído com sucesso!';
             snackbar.show = true;
             
-            // Fechar dialog de confirmação
             deleteDialog.show = false;
             deleteDialog.contato = null;
           } catch (error) {
@@ -425,7 +430,6 @@
           }
         }
         
-        // Buscar contatos da API
         async function fetchContatos() {
           try {
             const response = await fetch(`${API_URL}/contatos`);
