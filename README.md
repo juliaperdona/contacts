@@ -11,7 +11,6 @@ Aplicação simples de gerenciamento de contatos com um backend construído em N
 *   Validação de dados no formulário:
     *   **Nome:** Obrigatório, mínimo de duas palavras, cada uma com pelo menos 3 caracteres.
     *   **Telefone:** Obrigatório, formato `(xx) xxxxx-xxxx` ou `(xx) xxxx-xxxx`.
-*   Máscara de entrada automática para o campo de telefone.
 *   Botão "Salvar" do formulário desabilitado enquanto os dados não forem válidos.
 *   Destaque visual (fundo azul claro) para linhas da tabela cujo telefone possua DDD (11).
 *   Feedback ao usuário através de snackbars para operações bem-sucedidas ou com erro.
